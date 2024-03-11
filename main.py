@@ -11,19 +11,22 @@ from matplotlib.figure import Figure
 
 from reflow import ReflowTab
 from settings import SettingsTab
+from controller import ReflowController
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Reflow controller')
 
+        controller = ReflowController()
+
         self.tab_widget = QTabWidget(self)
         self.setCentralWidget(self.tab_widget) 
 
-        reflow_tab = ReflowTab()
+        reflow_tab = ReflowTab(controller)
         self.tab_widget.addTab(reflow_tab, "Reflow")
 
-        self.settings_tab = SettingsTab()
+        self.settings_tab = SettingsTab(controller)
         self.tab_widget.addTab(self.settings_tab, "Settings")
 
         reflow_tab.start_button.clicked.connect(self.deactivate_settings_tab)

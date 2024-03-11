@@ -35,8 +35,10 @@ class LiveGraph(FigureCanvas):
         self.draw()
 
 class ReflowTab(QWidget):
-    def __init__(self):
+    def __init__(self, controller):
         super().__init__()
+
+        self.controller = controller
         
         # Main widget and layout
         layout = QVBoxLayout(self)
@@ -66,11 +68,6 @@ class ReflowTab(QWidget):
         control_layout.addWidget(self.temp_label)
         layout.addWidget(control_panel, 0)
 
-        self.serial_port = serial.Serial(COM_PORT, 9600, timeout=1)
-        self.timer = QTimer(self)
-        self.timer.setInterval(500)  # Adjust as needed
-        self.timer.timeout.connect(self.update_graph)
-
         # Connect buttons
         self.start_button.clicked.connect(self.start_reading)
         self.stop_button.clicked.connect(self.stop_reading)
@@ -80,37 +77,25 @@ class ReflowTab(QWidget):
 
     def start_reading(self):
         self.graph.clear()
-        self.serial_port.write("doStart\n".encode())
-        self.status_label.setText("Started")
+        self.controller.start(self.update_graph)
         self.stop_button.setEnabled(True)
         self.start_button.setEnabled(False)
         self.x_data = []
         self.y_data = []
-        self.timer.start()
 
     def stop_reading(self):
-        self.timer.stop()
-        self.serial_port.write("doStop\n".encode())
+        self.controller.stop()
         self.status_label.setText("Stopped")
         self.stop_button.setEnabled(False)
         self.start_button.setEnabled(True)
         
-    def update_graph(self):
-        line = self.serial_port.readline().decode('utf-8').strip()
-        if line:
-            try:
-                columns = re.split(r',\s+', line)
-                temperature = float(columns[2])
-                seconds = int(columns[1])
-                status = columns[0]
-                print(f"{seconds} s: {temperature} degC")
-                self.status_label.setText(status)
-                self.temp_label.setText(f"{seconds} s: {temperature} C\u00b0")
-                self.x_data.append(seconds)
-                self.y_data.append(temperature)
-                self.graph.plot(self.x_data, self.y_data)
-            except:
-                pass  # Handle non-numeric data gracefully
+    def update_graph(self, state, time, temp):
+        print(f"{time} s: {temp} \u00b0C")
+        self.status_label.setText(state)
+        self.temp_label.setText(f"{time} s: {temp} \u00b0C")
+        self.x_data.append(time)
+        self.y_data.append(temp)
+        self.graph.plot(self.x_data, self.y_data)
 
 #if __name__ == '__main__':
 #    app = QApplication(sys.argv)
